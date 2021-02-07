@@ -2,8 +2,8 @@ package socks5
 
 import (
 	"context"
-	"io"
 	"net"
+	"strings"
 	"time"
 )
 
@@ -14,7 +14,8 @@ type ServerHandler interface {
 	LogInfo(format string, a ...interface{})
 	Handshake(methods []Method) Method
 	CheckUserPass(user, pass string) bool
-	Connect(a Addr) (io.ReadWriter, Addr, error)
+	Connect(a Addr) (net.Conn, Addr, error)
+	Forward(local, remote net.Conn)
 }
 
 // ServerConf server config
@@ -122,13 +123,27 @@ func (s *Server) handleSocket(c net.Conn) {
 	if err != nil {
 		s.cfg.Handler.LogError("waitRequest failed" + errInfo(c, err))
 	}
+	var remote net.Conn
 	switch cmd {
 	case CmdConnect:
-		remote, nextAddr, err := s.cfg.Handler.Connect(addr)
+		var nextAddr Addr
+		remote, nextAddr, err = s.cfg.Handler.Connect(addr)
 		if err != nil {
-			err = writeTimeout(c, append([]byte{VERSION, byte(ReplyConnectionRefused), 0x00},
+			msg := err.Error()
+			t := ReplyUnsupportCmd
+			switch {
+			case strings.Contains(msg, "refused"):
+				t = ReplyConnectionRefused
+			case strings.Contains(msg, "network is unreachable"):
+				t = ReplyNetworkUnavailable
+			}
+			err = writeTimeout(c, append([]byte{VERSION, byte(t), 0x00},
 				errAddr.Bytes()...), s.cfg.WriteTimeout)
+			return
 		}
+		defer remote.Close()
+		err = writeTimeout(c, append([]byte{VERSION, byte(ReplyOK), 0x00},
+			nextAddr.Bytes()...), s.cfg.WriteTimeout)
 	case CmdBind:
 		err = writeTimeout(c, append([]byte{VERSION, byte(ReplyUnsupportCmd), 0x00},
 			errAddr.Bytes()...), s.cfg.WriteTimeout)
@@ -140,4 +155,5 @@ func (s *Server) handleSocket(c net.Conn) {
 		s.cfg.Handler.LogError("handle %s failed" + errInfo(c, err))
 		return
 	}
+	s.cfg.Handler.Forward(c, remote)
 }

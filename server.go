@@ -2,6 +2,7 @@ package socks5
 
 import (
 	"context"
+	"io"
 	"net"
 	"strings"
 	"time"
@@ -14,8 +15,8 @@ type ServerHandler interface {
 	LogInfo(format string, a ...interface{})
 	Handshake(methods []Method) Method
 	CheckUserPass(user, pass string) bool
-	Connect(a Addr) (net.Conn, Addr, error)
-	Forward(local, remote net.Conn)
+	Connect(a Addr) (io.ReadWriteCloser, Addr, error)
+	Forward(local, remote io.ReadWriteCloser)
 }
 
 // ServerConf server config
@@ -124,7 +125,7 @@ func (s *Server) handleSocket(c net.Conn) {
 		s.cfg.Handler.LogError("waitRequest failed" + errInfo(c, err))
 		return
 	}
-	var remote net.Conn
+	var remote io.ReadWriteCloser
 	switch cmd {
 	case CmdConnect:
 		var nextAddr Addr

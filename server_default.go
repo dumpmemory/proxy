@@ -34,7 +34,7 @@ func (h defaultServerHandler) CheckUserPass(user, pass string) bool {
 	return true
 }
 
-func (h defaultServerHandler) Connect(addr Addr) (net.Conn, Addr, error) {
+func (h defaultServerHandler) Connect(addr Addr) (io.ReadWriteCloser, Addr, error) {
 	var remote *net.TCPConn
 	var err error
 	switch addr.Type {
@@ -88,7 +88,7 @@ func netCopy(ctx context.Context, cancel context.CancelFunc, dst io.Writer, src 
 	}
 }
 
-func (h defaultServerHandler) Forward(local, remote net.Conn) {
+func (h defaultServerHandler) Forward(local, remote io.ReadWriteCloser) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go netCopy(ctx, cancel, local, remote)

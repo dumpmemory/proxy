@@ -1,5 +1,7 @@
 # socks5
 
+[![Go Reference](https://pkg.go.dev/badge/github.com/lwch/socks5.svg)](https://pkg.go.dev/github.com/lwch/socks5)
+
 socks5 library supported no auth and user/pass authentication.
 
 ## server example

@@ -51,9 +51,9 @@ type Server struct {
 // NewServer create server
 func NewServer(cfg ServerConf) *Server {
 	cfg.SetDefault()
-	s := &Server{cfg: cfg}
-	s.ctx, s.cancel = context.WithCancel(context.Background())
-	return s
+	svr := &Server{cfg: cfg}
+	svr.ctx, svr.cancel = context.WithCancel(context.Background())
+	return svr
 }
 
 // Shutdown service shutdown
@@ -122,6 +122,7 @@ func (s *Server) handleSocket(c net.Conn) {
 	cmd, addr, err := waitRequest(c, s.cfg.ReadTimeout)
 	if err != nil {
 		s.cfg.Handler.LogError("waitRequest failed" + errInfo(c, err))
+		return
 	}
 	var remote net.Conn
 	switch cmd {
@@ -152,7 +153,7 @@ func (s *Server) handleSocket(c net.Conn) {
 			errAddr.Bytes()...), s.cfg.WriteTimeout)
 	}
 	if err != nil {
-		s.cfg.Handler.LogError("handle %s failed" + errInfo(c, err))
+		s.cfg.Handler.LogError("handle failed" + errInfo(c, err))
 		return
 	}
 	s.cfg.Handler.Forward(c, remote)

@@ -1,12 +1,5 @@
 package socks5
 
-import (
-	"bytes"
-	"encoding/binary"
-	"fmt"
-	"net"
-)
-
 // VERSION socks version
 const VERSION = 5
 
@@ -64,69 +57,4 @@ const (
 	AddrIPV6 = AType(0x04)
 	// AddrUnknown unknown type
 	AddrUnknown = AType(0xff)
-)
-
-// Addr address
-type Addr struct {
-	Type   AType
-	IP     net.IP
-	Port   uint16
-	Domain string
-}
-
-func (a Addr) String() string {
-	switch a.Type {
-	case AddrIPV4, AddrIPV6:
-		return fmt.Sprintf("%s:%d", a.IP.String(), a.Port)
-	case AddrDomain:
-		return fmt.Sprintf("%s:%d", a.Domain, a.Port)
-	default:
-		return ""
-	}
-}
-
-// Bytes compact address
-func (a Addr) Bytes() []byte {
-	var buf bytes.Buffer
-	switch a.Type {
-	case AddrIPV4:
-		buf.WriteByte(byte(AddrIPV4))
-		binary.Write(&buf, binary.BigEndian, a.IP.To4())
-	case AddrIPV6:
-		buf.WriteByte(byte(AddrIPV6))
-		binary.Write(&buf, binary.BigEndian, a.IP.To16())
-	case AddrDomain:
-		buf.WriteByte(byte(AddrDomain))
-		buf.WriteByte(byte(len(a.Domain)))
-		buf.WriteString(a.Domain)
-	default:
-		buf.WriteByte(byte(AddrIPV4))
-		binary.Write(&buf, binary.BigEndian, a.IP.To4())
-	}
-	binary.Write(&buf, binary.BigEndian, a.Port)
-	return buf.Bytes()
-}
-
-// Reply reply
-type Reply byte
-
-const (
-	// ReplyOK ok
-	ReplyOK = Reply(0x00)
-	// ReplyConnectionRefused connection refused
-	ReplyConnectionRefused = Reply(0x01)
-	// ReplyRuleDisabled rule disable
-	ReplyRuleDisabled = Reply(0x02)
-	// ReplyNetworkUnavailable net unavailable
-	ReplyNetworkUnavailable = Reply(0x03)
-	// ReplyHostUnavailable host unavailable
-	ReplyHostUnavailable = Reply(0x04)
-	// ReplyResetByPeer connection reset by peer
-	ReplyResetByPeer = Reply(0x05)
-	// ReplyTTLExpired ttl expired
-	ReplyTTLExpired = Reply(0x06)
-	// ReplyUnsupportCmd unsupport command
-	ReplyUnsupportCmd = Reply(0x07)
-	// ReplyUnsupportAddr unsupport address
-	ReplyUnsupportAddr = Reply(0x08)
 )

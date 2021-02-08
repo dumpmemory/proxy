@@ -197,5 +197,6 @@ func (c *Client) DialUserPass(addr, user, pass string) (net.Conn, error) {
 		conn.Close()
 		return nil, fmt.Errorf("request: %v", err)
 	}
+	conn.SetDeadline(time.Time{})
 	return conn, nil
 }

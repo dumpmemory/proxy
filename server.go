@@ -157,5 +157,6 @@ func (s *Server) handleSocket(c net.Conn) {
 		s.cfg.Handler.LogError("handle failed" + errInfo(c, err))
 		return
 	}
+	c.SetDeadline(time.Time{})
 	s.cfg.Handler.Forward(c, remote)
 }

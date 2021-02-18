@@ -56,7 +56,9 @@ func NewServer(cfg ServerConf, addr string) *Server {
 	svr := &Server{
 		cfg: cfg,
 		svr: &http.Server{
-			Addr: addr,
+			ReadTimeout:  cfg.ReadTimeout,
+			WriteTimeout: cfg.WriteTimeout,
+			Addr:         addr,
 		},
 	}
 	svr.svr.Handler = svr

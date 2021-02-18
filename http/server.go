@@ -2,12 +2,14 @@ package http
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"io"
 	"net"
 	"net/http"
 	"net/http/httputil"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/lwch/proxy/addr"
@@ -82,20 +84,46 @@ func (s *Server) ListenAndServeTLS() error {
 	return s.svr.ListenAndServeTLS(s.cfg.Crt, s.cfg.Key)
 }
 
+// copy from req.BasicAuth
+func parseBasicAuth(auth string) (username, password string, ok bool) {
+	const prefix = "Basic "
+	// Case insensitive prefix match. See Issue 22736.
+	if len(auth) < len(prefix) || !strings.EqualFold(auth[:len(prefix)], prefix) {
+		return
+	}
+	c, err := base64.StdEncoding.DecodeString(auth[len(prefix):])
+	if err != nil {
+		return
+	}
+	cs := string(c)
+	s := strings.IndexByte(cs, ':')
+	if s < 0 {
+		return
+	}
+	return cs[:s], cs[s+1:], true
+}
+
 func (s *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	if s.cfg.Check {
-		user, pass, ok := req.BasicAuth()
+		// https://www.ietf.org/rfc/rfc2068.txt 14.33
+		auth := req.Header.Get("Proxy-Authenticate")
+		if len(auth) == 0 {
+			http.Error(w, "forbidden", http.StatusProxyAuthRequired)
+			return
+		}
+		user, pass, ok := parseBasicAuth(auth)
 		if !ok {
-			http.Error(w, "forbidden", http.StatusForbidden)
+			http.Error(w, "forbidden", http.StatusProxyAuthRequired)
 			return
 		}
 		if !s.cfg.Handler.CheckUserPass(user, pass) {
-			http.Error(w, "invalid user/pass", http.StatusForbidden)
+			http.Error(w, "invalid user/pass", http.StatusUnauthorized)
 			return
 		}
 	}
 	// fix DumpRequest missing Host header
 	req.RequestURI = ""
+	req.Header.Del("Proxy-Authenticate")
 	host, port, err := net.SplitHostPort(req.Host)
 	if err != nil {
 		host = req.Host
@@ -125,7 +153,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	remote, _, err := s.cfg.Handler.Connect(a)
 	if err != nil {
 		s.cfg.Handler.LogError("connect %s failed"+errInfo(req.RemoteAddr, err), a.String())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusBadGateway)
 		return
 	}
 	hijacker, ok := w.(http.Hijacker)
@@ -150,13 +178,13 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		data, err := httputil.DumpRequest(req, true)
 		if err != nil {
 			s.cfg.Handler.LogError("dump request failed" + errInfo(req.RemoteAddr, err))
-			http.Error(w, fmt.Sprintf("dump request: %s", err.Error()), http.StatusInternalServerError)
+			http.Error(w, fmt.Sprintf("dump request: %s", err.Error()), http.StatusBadRequest)
 			return
 		}
 		_, err = remote.Write(data)
 		if err != nil {
 			s.cfg.Handler.LogError("forward request failed" + errInfo(req.RemoteAddr, err))
-			http.Error(w, fmt.Sprintf("forward: %s", err.Error()), http.StatusInternalServerError)
+			http.Error(w, fmt.Sprintf("forward: %s", err.Error()), http.StatusBadGateway)
 			return
 		}
 	}

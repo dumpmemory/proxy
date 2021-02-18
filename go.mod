@@ -1,3 +1,3 @@
-module github.com/lwch/socks5
+module github.com/lwch/proxy
 
 go 1.15

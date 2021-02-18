@@ -43,7 +43,8 @@ func (h defaultServerHandler) Connect(a addr.Addr) (io.ReadWriteCloser, addr.Add
 	case addr.IPV4, addr.IPV6:
 		remote, err = net.DialTCP("tcp", nil, &net.TCPAddr{IP: a.IP, Port: int(a.Port)})
 	case addr.Domain:
-		addr, err := net.ResolveTCPAddr("tcp", a.String())
+		var addr *net.TCPAddr
+		addr, err = net.ResolveTCPAddr("tcp", a.String())
 		if err != nil {
 			return nil, a, err
 		}

@@ -6,6 +6,8 @@ import (
 	"net"
 	"strings"
 	"time"
+
+	"github.com/lwch/proxy/addr"
 )
 
 // ServerHandler server handler
@@ -15,7 +17,7 @@ type ServerHandler interface {
 	LogInfo(format string, a ...interface{})
 	Handshake(methods []Method) Method
 	CheckUserPass(user, pass string) bool
-	Connect(a Addr) (io.ReadWriteCloser, Addr, error)
+	Connect(a addr.Addr) (io.ReadWriteCloser, addr.Addr, error)
 	Forward(local, remote io.ReadWriteCloser)
 }
 
@@ -88,7 +90,7 @@ func (s *Server) ListenAndServe(addr string) error {
 	}
 }
 
-var errAddr Addr
+var errAddr addr.Addr
 
 func (s *Server) handleSocket(c net.Conn) {
 	defer c.Close()
@@ -120,7 +122,7 @@ func (s *Server) handleSocket(c net.Conn) {
 			return
 		}
 	}
-	cmd, addr, err := waitRequest(c, s.cfg.ReadTimeout)
+	cmd, reqAddr, err := waitRequest(c, s.cfg.ReadTimeout)
 	if err != nil {
 		s.cfg.Handler.LogError("waitRequest failed" + errInfo(c, err))
 		return
@@ -128,8 +130,8 @@ func (s *Server) handleSocket(c net.Conn) {
 	var remote io.ReadWriteCloser
 	switch cmd {
 	case CmdConnect:
-		var nextAddr Addr
-		remote, nextAddr, err = s.cfg.Handler.Connect(addr)
+		var nextAddr addr.Addr
+		remote, nextAddr, err = s.cfg.Handler.Connect(reqAddr)
 		if err != nil {
 			msg := err.Error()
 			t := ReplyUnsupportCmd

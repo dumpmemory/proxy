@@ -6,6 +6,8 @@ import (
 	"io"
 	"net"
 	"time"
+
+	"github.com/lwch/proxy/addr"
 )
 
 func errInfo(c net.Conn, err error) string {
@@ -82,9 +84,9 @@ func readIPAddr(c net.Conn, length int) (net.IP, uint16, error) {
 	return ip, port, nil
 }
 
-func waitRequest(c net.Conn, timeout time.Duration) (Cmd, Addr, error) {
+func waitRequest(c net.Conn, timeout time.Duration) (Cmd, addr.Addr, error) {
 	c.SetReadDeadline(time.Now().Add(timeout))
-	t := Addr{Type: AddrUnknown}
+	t := addr.Addr{Type: addr.Unknown}
 	var hdr [4]byte
 	_, err := io.ReadFull(c, hdr[:])
 	if err != nil {
@@ -94,13 +96,13 @@ func waitRequest(c net.Conn, timeout time.Duration) (Cmd, Addr, error) {
 		return CmdUnknown, t, ErrVersion
 	}
 	cmd := Cmd(hdr[1])
-	t.Type = AType(hdr[3])
+	t.Type = addr.Type(hdr[3])
 	switch t.Type {
-	case AddrIPV4:
+	case addr.IPV4:
 		t.IP, t.Port, err = readIPAddr(c, net.IPv4len)
-	case AddrIPV6:
+	case addr.IPV6:
 		t.IP, t.Port, err = readIPAddr(c, net.IPv6len)
-	case AddrDomain:
+	case addr.Domain:
 		var l [1]byte
 		_, err = c.Read(l[:])
 		if err != nil {

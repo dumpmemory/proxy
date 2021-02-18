@@ -1,4 +1,4 @@
-package socks5
+package http
 
 import (
 	"context"
@@ -10,15 +10,6 @@ import (
 )
 
 type defaultServerHandler struct{}
-
-func (h defaultServerHandler) Handshake(methods []Method) Method {
-	for _, m := range methods {
-		if m == MethodNoAuth {
-			return m
-		}
-	}
-	return MethodNotSupport
-}
 
 func (h defaultServerHandler) LogDebug(format string, a ...interface{}) {
 	log.Printf("[DEBUG]"+format, a...)

@@ -1,13 +1,14 @@
 package main
 
 import (
+	"crypto/tls"
 	"fmt"
 	"io/ioutil"
-	"net"
 	"net/http"
+	"net/url"
 	"time"
 
-	"github.com/lwch/proxy/socks5"
+	proxy "github.com/lwch/proxy/http"
 )
 
 func assert(err error) {
@@ -18,23 +19,20 @@ func assert(err error) {
 
 func main() {
 	go func() {
-		var cfg socks5.ServerConf
-		svr := socks5.NewServer(cfg)
-		assert(svr.ListenAndServe(":1080"))
+		var cfg proxy.ServerConf
+		svr := proxy.NewServer(cfg, ":1080")
+		assert(svr.ListenAndServe())
 	}()
 
 	time.Sleep(time.Second)
-	var cfg socks5.ClientConf
-	cfg.ServerAddr = "127.0.0.1:1080"
-	cli, err := socks5.NewClient(cfg)
-	assert(err)
 	req, err := http.NewRequest("GET", "http://myip.ipip.net", nil)
 	assert(err)
 	httpCli := &http.Client{
 		Transport: &http.Transport{
-			Dial: func(network, addr string) (net.Conn, error) {
-				return cli.Dial(addr)
+			Proxy: func(req *http.Request) (*url.URL, error) {
+				return url.Parse("http://127.0.0.1:1080")
 			},
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		},
 	}
 	rep, err := httpCli.Do(req)

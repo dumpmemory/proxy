@@ -7,6 +7,8 @@ import (
 	"net"
 	"strconv"
 	"time"
+
+	"github.com/lwch/proxy/addr"
 )
 
 // ClientConf client config
@@ -96,8 +98,8 @@ func (c *Client) handshakeUserPass(conn net.Conn, user, pass string) error {
 	return nil
 }
 
-func (c *Client) request(conn net.Conn, addr string) error {
-	host, port, err := net.SplitHostPort(addr)
+func (c *Client) request(conn net.Conn, a string) error {
+	host, port, err := net.SplitHostPort(a)
 	if err != nil {
 		return fmt.Errorf("split host:port: %v", err)
 	}
@@ -105,20 +107,20 @@ func (c *Client) request(conn net.Conn, addr string) error {
 	if err != nil {
 		return fmt.Errorf("parse port: %v", err)
 	}
-	a := Addr{Port: uint16(p)}
+	reqAddr := addr.Addr{Port: uint16(p)}
 	ip := net.ParseIP(host)
 	if ip == nil {
-		a.Type = AddrDomain
-		a.Domain = host
+		reqAddr.Type = addr.Domain
+		reqAddr.Domain = host
 	} else if len(ip) == net.IPv4len {
-		a.Type = AddrIPV4
-		a.IP = ip
+		reqAddr.Type = addr.IPV4
+		reqAddr.IP = ip
 	} else {
-		a.Type = AddrIPV6
-		a.IP = ip
+		reqAddr.Type = addr.IPV6
+		reqAddr.IP = ip
 	}
 	err = writeTimeout(conn, append([]byte{VERSION, byte(CmdConnect), 0x00},
-		a.Bytes()...), c.cfg.WriteTimeout)
+		reqAddr.Bytes()...), c.cfg.WriteTimeout)
 	if err != nil {
 		return fmt.Errorf("send connect: %v", err)
 	}
@@ -134,14 +136,14 @@ func (c *Client) request(conn net.Conn, addr string) error {
 	if hdr[1] != byte(ReplyOK) {
 		return fmt.Errorf("connect: %s", Reply(hdr[1]).String())
 	}
-	switch AType(hdr[3]) {
-	case AddrIPV4:
+	switch addr.Type(hdr[3]) {
+	case addr.IPV4:
 		var addrPort [net.IPv4len + 2]byte
 		_, err = io.ReadFull(conn, addrPort[:])
-	case AddrIPV6:
+	case addr.IPV6:
 		var addrPort [net.IPv6len + 2]byte
 		_, err = io.ReadFull(conn, addrPort[:])
-	case AddrDomain:
+	case addr.Domain:
 		var l [1]byte
 		_, err = conn.Read(l[:])
 		if err != nil {

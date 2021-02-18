@@ -44,17 +44,3 @@ func (m Method) String() string {
 	}
 	return ""
 }
-
-// AType addr type
-type AType byte
-
-const (
-	// AddrIPV4 ipv4 type
-	AddrIPV4 = AType(0x01)
-	// AddrDomain domain type
-	AddrDomain = AType(0x03)
-	// AddrIPV6 ipv6 type
-	AddrIPV6 = AType(0x04)
-	// AddrUnknown unknown type
-	AddrUnknown = AType(0xff)
-)

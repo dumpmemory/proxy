@@ -90,7 +90,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	var a addr.Addr
 	if ip := net.ParseIP(host); ip == nil {
 		a.Type = addr.Domain
-		a.Domain = req.Host
+		a.Domain = host
 	} else if len(ip) == net.IPv4len {
 		a.Type = addr.IPV4
 		a.IP = ip

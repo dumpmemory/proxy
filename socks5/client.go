@@ -168,7 +168,7 @@ func (c *Client) DialUserPass(addr, user, pass string) (net.Conn, error) {
 	}
 	var wantMethod Method
 	if len(user) != 0 || len(pass) != 0 {
-		err = writeTimeout(conn, []byte{VERSION, 1, byte(MethodNoAuth)}, c.cfg.WriteTimeout)
+		err = writeTimeout(conn, []byte{VERSION, 1, byte(MethodUserPass)}, c.cfg.WriteTimeout)
 		wantMethod = MethodUserPass
 	} else {
 		err = writeTimeout(conn, []byte{VERSION, 1, byte(MethodNoAuth)}, c.cfg.WriteTimeout)

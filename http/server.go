@@ -6,7 +6,6 @@ import (
 	"net"
 	"net/http"
 	"net/http/httputil"
-	"net/url"
 	"strconv"
 	"time"
 
@@ -80,13 +79,8 @@ func (s *Server) ListenAndServeTLS() error {
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	u, err := url.Parse(req.RequestURI)
-	if err != nil {
-		s.cfg.Handler.LogError("parse request uri failed" + errInfo(req.RemoteAddr, err))
-		return
-	}
 	// fix DumpRequest missing Host header
-	req.RequestURI = u.Path
+	req.RequestURI = ""
 	host, port, err := net.SplitHostPort(req.Host)
 	if err != nil {
 		host = req.Host

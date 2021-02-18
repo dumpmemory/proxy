@@ -6,6 +6,14 @@ proxy library supported http(s) and socks5 protocol.
 
 ## http
 
+https://tools.ietf.org/html/rfc7230#section-5.7.2
+
+supported user/pass authentication.
+  - ServerConf.Check: set true.
+  - ServerHandler.CheckUserPass: check input user/pass is valid.
+
+supported https proxy with set `ServerConf.Key` and `ServerConf.Crt` field.
+
 ### server example
 
     var cfg proxy.ServerConf
@@ -34,6 +42,13 @@ proxy library supported http(s) and socks5 protocol.
     fmt.Print(string(data))
 
 ## socks5
+
+https://tools.ietf.org/html/rfc1928
+
+supported user/pass authentication.
+  - ServerHandler.Handshake: check input supported socks5.MethodUserPass and return that.
+  - ServerHandler.CheckUserPass: check input user/pass is valid.
+  - Client.DialUserPass: dial connection by user/pass.
 
 ### server example
 

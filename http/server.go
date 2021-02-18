@@ -2,6 +2,7 @@ package http
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -26,6 +27,7 @@ type ServerHandler interface {
 type ServerConf struct {
 	ReadTimeout  time.Duration // Default: 1s
 	WriteTimeout time.Duration // Default: 1s
+	Check        bool          // Default: false
 	Key          string
 	Crt          string
 	Handler      ServerHandler
@@ -81,6 +83,17 @@ func (s *Server) ListenAndServeTLS() error {
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	if s.cfg.Check {
+		user, pass, ok := req.BasicAuth()
+		if !ok {
+			http.Error(w, "forbidden", http.StatusForbidden)
+			return
+		}
+		if !s.cfg.Handler.CheckUserPass(user, pass) {
+			http.Error(w, "invalid user/pass", http.StatusForbidden)
+			return
+		}
+	}
 	// fix DumpRequest missing Host header
 	req.RequestURI = ""
 	host, port, err := net.SplitHostPort(req.Host)
@@ -112,16 +125,19 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	remote, _, err := s.cfg.Handler.Connect(a)
 	if err != nil {
 		s.cfg.Handler.LogError("connect %s failed"+errInfo(req.RemoteAddr, err), a.String())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	hijacker, ok := w.(http.Hijacker)
 	if !ok {
 		s.cfg.Handler.LogError("not supported hijacker, addr=%s", req.RemoteAddr)
+		http.Error(w, "not supported hijacker", http.StatusBadRequest)
 		return
 	}
 	conn, _, err := hijacker.Hijack()
 	if err != nil {
 		s.cfg.Handler.LogError("hijack failed" + errInfo(req.RemoteAddr, err))
+		http.Error(w, fmt.Sprintf("hijack: %s", err.Error()), http.StatusBadRequest)
 		return
 	}
 	if req.Method == http.MethodConnect {
@@ -134,11 +150,13 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		data, err := httputil.DumpRequest(req, true)
 		if err != nil {
 			s.cfg.Handler.LogError("dump request failed" + errInfo(req.RemoteAddr, err))
+			http.Error(w, fmt.Sprintf("dump request: %s", err.Error()), http.StatusInternalServerError)
 			return
 		}
 		_, err = remote.Write(data)
 		if err != nil {
 			s.cfg.Handler.LogError("forward request failed" + errInfo(req.RemoteAddr, err))
+			http.Error(w, fmt.Sprintf("forward: %s", err.Error()), http.StatusInternalServerError)
 			return
 		}
 	}

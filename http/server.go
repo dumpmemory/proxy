@@ -27,7 +27,7 @@ type ServerConf struct {
 	ReadTimeout  time.Duration // Default: 1s
 	WriteTimeout time.Duration // Default: 1s
 	Key          string
-	Cert         string
+	Crt          string
 	Handler      ServerHandler
 }
 
@@ -75,7 +75,7 @@ func (s *Server) ListenAndServe() error {
 
 // ListenAndServeTLS listen and serve tls
 func (s *Server) ListenAndServeTLS() error {
-	return s.svr.ListenAndServeTLS(s.cfg.Cert, s.cfg.Key)
+	return s.svr.ListenAndServeTLS(s.cfg.Crt, s.cfg.Key)
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"crypto/tls"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -20,8 +19,11 @@ func assert(err error) {
 func main() {
 	go func() {
 		var cfg proxy.ServerConf
+		// cfg.Key = "server.key"
+		// cfg.Crt = "server.crt"
 		svr := proxy.NewServer(cfg, ":1080")
 		assert(svr.ListenAndServe())
+		// assert(svr.ListenAndServeTLS())
 	}()
 
 	time.Sleep(time.Second)
@@ -32,7 +34,7 @@ func main() {
 			Proxy: func(req *http.Request) (*url.URL, error) {
 				return url.Parse("http://127.0.0.1:1080")
 			},
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			// TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		},
 	}
 	rep, err := httpCli.Do(req)

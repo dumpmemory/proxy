@@ -1,16 +1,47 @@
-# socks5
+# proxy
 
-[![Go Reference](https://pkg.go.dev/badge/github.com/lwch/socks5.svg)](https://pkg.go.dev/github.com/lwch/socks5)
+[![Go Reference](https://pkg.go.dev/badge/github.com/lwch/proxy.svg)](https://pkg.go.dev/github.com/lwch/proxy)
 
-socks5 library supported no auth and user/pass authentication.
+proxy library supported http(s) and socks5 protocol.
 
-## server example
+## http
+
+### server example
+
+    var cfg proxy.ServerConf
+    // cfg.Key = "server.key"
+    // cfg.Crt = "server.crt"
+    svr := proxy.NewServer(cfg, ":1080")
+    assert(svr.ListenAndServe())
+    // assert(svr.ListenAndServeTLS())
+
+### client example
+
+    req, err := http.NewRequest("GET", "http://myip.ipip.net", nil)
+    assert(err)
+    httpCli := &http.Client{
+        Transport: &http.Transport{
+            Proxy: func(req *http.Request) (*url.URL, error) {
+                return url.Parse("http://127.0.0.1:1080")
+            },
+            // TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+        },
+    }
+    rep, err := httpCli.Do(req)
+    assert(err)
+    defer rep.Body.Close()
+    data, _ := ioutil.ReadAll(rep.Body)
+    fmt.Print(string(data))
+
+## socks5
+
+### server example
 
     var cfg socks5.ServerConf
     svr := socks5.NewServer(cfg)
     svr.ListenAndServe(":1080")
 
-## client example
+### client example
 
     var cfg socks5.ClientConf
     cli, err := socks5.NewClient(cfg)

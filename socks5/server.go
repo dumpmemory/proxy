@@ -141,7 +141,7 @@ func (s *Server) handleSocket(c net.Conn) {
 			case strings.Contains(msg, "network is unreachable"):
 				t = ReplyNetworkUnavailable
 			}
-			err = writeTimeout(c, append([]byte{VERSION, byte(t), 0x00},
+			writeTimeout(c, append([]byte{VERSION, byte(t), 0x00},
 				errAddr.Bytes()...), s.cfg.WriteTimeout)
 			return
 		}

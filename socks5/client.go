@@ -63,7 +63,7 @@ func waitHandshakeResponse(conn net.Conn, timeout time.Duration) (Method, error)
 		return MethodNotSupport, err
 	}
 	if buf[0] != VERSION {
-		return MethodNotSupport, ErrVersion
+		return MethodNotSupport, fmt.Errorf("invalid version: %d", buf[0])
 	}
 	return Method(buf[1]), nil
 }
@@ -131,7 +131,7 @@ func (c *Client) request(conn net.Conn, a string) error {
 		return fmt.Errorf("read response header: %v", err)
 	}
 	if hdr[0] != VERSION {
-		return ErrVersion
+		return fmt.Errorf("invalid version: %d", hdr[0])
 	}
 	if hdr[1] != byte(ReplyOK) {
 		return fmt.Errorf("connect: %s", Reply(hdr[1]).String())

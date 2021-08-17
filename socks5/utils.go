@@ -28,7 +28,7 @@ func waitHandshake(c net.Conn, timeout time.Duration) ([]Method, error) {
 		return nil, err
 	}
 	if hdr[0] != VERSION {
-		return nil, ErrVersion
+		return nil, fmt.Errorf("invalid version: %d", hdr[0])
 	}
 	methods := make([]byte, hdr[1])
 	_, err = io.ReadFull(c, methods[:])
@@ -93,7 +93,7 @@ func waitRequest(c net.Conn, timeout time.Duration) (Cmd, addr.Addr, error) {
 		return CmdUnknown, t, err
 	}
 	if hdr[0] != VERSION {
-		return CmdUnknown, t, ErrVersion
+		return CmdUnknown, t, fmt.Errorf("invalid version: %d", hdr[0])
 	}
 	cmd := Cmd(hdr[1])
 	t.Type = addr.Type(hdr[3])

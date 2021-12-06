@@ -21,7 +21,7 @@ type ServerHandler interface {
 	LogError(format string, a ...interface{})
 	LogInfo(format string, a ...interface{})
 	CheckUserPass(user, pass string) bool
-	Connect(a addr.Addr) (io.ReadWriteCloser, addr.Addr, error)
+	Connect(from string, to addr.Addr) (io.ReadWriteCloser, addr.Addr, error)
 	Forward(local, remote io.ReadWriteCloser)
 }
 
@@ -150,7 +150,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			a.Port = 80
 		}
 	}
-	remote, _, err := s.cfg.Handler.Connect(a)
+	remote, _, err := s.cfg.Handler.Connect(req.RemoteAddr, a)
 	if err != nil {
 		s.cfg.Handler.LogError("connect %s failed"+errInfo(req.RemoteAddr, err), a.String())
 		http.Error(w, err.Error(), http.StatusBadGateway)

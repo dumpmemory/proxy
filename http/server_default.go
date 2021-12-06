@@ -27,24 +27,24 @@ func (h defaultServerHandler) CheckUserPass(user, pass string) bool {
 	return true
 }
 
-func (h defaultServerHandler) Connect(a addr.Addr) (io.ReadWriteCloser, addr.Addr, error) {
+func (h defaultServerHandler) Connect(from string, to addr.Addr) (io.ReadWriteCloser, addr.Addr, error) {
 	var remote *net.TCPConn
 	var err error
-	switch a.Type {
+	switch to.Type {
 	case addr.IPV4, addr.IPV6:
-		remote, err = net.DialTCP("tcp", nil, &net.TCPAddr{IP: a.IP, Port: int(a.Port)})
+		remote, err = net.DialTCP("tcp", nil, &net.TCPAddr{IP: to.IP, Port: int(to.Port)})
 	case addr.Domain:
 		var addr *net.TCPAddr
-		addr, err = net.ResolveTCPAddr("tcp", a.String())
+		addr, err = net.ResolveTCPAddr("tcp", to.String())
 		if err != nil {
-			return nil, a, err
+			return nil, to, err
 		}
 		remote, err = net.DialTCP("tcp", nil, addr)
 	}
 	if err != nil {
-		return nil, a, err
+		return nil, to, err
 	}
-	return remote, a, nil
+	return remote, to, nil
 }
 
 // netCopy copy from io.Copy

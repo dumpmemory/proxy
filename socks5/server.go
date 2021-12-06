@@ -17,7 +17,7 @@ type ServerHandler interface {
 	LogInfo(format string, a ...interface{})
 	Handshake(methods []Method) Method
 	CheckUserPass(user, pass string) bool
-	Connect(a addr.Addr) (io.ReadWriteCloser, addr.Addr, error)
+	Connect(from string, to addr.Addr) (io.ReadWriteCloser, addr.Addr, error)
 	Forward(local, remote io.ReadWriteCloser)
 }
 
@@ -131,7 +131,7 @@ func (s *Server) handleSocket(c net.Conn) {
 	switch cmd {
 	case CmdConnect:
 		var nextAddr addr.Addr
-		remote, nextAddr, err = s.cfg.Handler.Connect(reqAddr)
+		remote, nextAddr, err = s.cfg.Handler.Connect(c.RemoteAddr().String(), reqAddr)
 		if err != nil {
 			msg := err.Error()
 			t := ReplyUnsupportCmd
